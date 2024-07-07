@@ -1,8 +1,9 @@
-import time
+from datetime import datetime as dt
 import sys
 import RPi.GPIO as GPIO
 from hx711 import HX711
 import paho.mqtt.client as mqtt
+import json
 
 def cleanAndExit():
     print("Cleaning...")
@@ -35,6 +36,8 @@ def main():
   # 通信処理スタート
   client.loop_start()    # subはloop_forever()だが，pubはloop_start()で起動だけさせる
 
+  dt_start = dt.now()
+
   # 永久に繰り返す
   while True:
 
@@ -46,12 +49,19 @@ def main():
         # np_arr8_string = hx.get_np_arr8_string()
         # binary_string = hx.get_binary_string()
         # print binary_string + " " + np_arr8_string
+
+        time = dt.now()
+        timedelta = time - dt_start
+        # print(timedelta)
         
         # Prints the weight. Comment if you're debbuging the MSB and LSB issue.
-        val = hx.get_weight(5)
-        print(val)
+        weight = hx.get_weight(5)
+        # print(weight)
 
-        client.publish("coffee-scale/measured-weight", val)    # トピック名とメッセージを決めて送信
+        message = {"time": str(time), "timedelta": str(timedelta), "weight": weight}
+        print(message)
+        payload = json.dumps(message)
+        client.publish("coffee-scale/measured-weight", payload)    # トピック名とメッセージを決めて送信
 
         # To get weight from both channels (if you have load cells hooked up 
         # to both channel A and B), do something like this
